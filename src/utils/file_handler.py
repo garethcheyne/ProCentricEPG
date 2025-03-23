@@ -1,3 +1,4 @@
+import datetime
 import json
 import os
 import zipfile
@@ -20,10 +21,29 @@ def save_json(data: ProgramGuide, subdirs: list[str]):
     
     return json_path
 
-def zip_json(json_path: Path, zip_filename: str):
-    """Zip the JSON file with a custom ZIP filename and delete the original JSON file."""
-    zip_path = json_path.parent / f"{zip_filename}.zip"  # Custom ZIP name
+import zipfile
+from pathlib import Path
+from datetime import datetime
 
+def zip_json(json_path: Path, zip_filename: str):
+    """Zip the JSON file with a custom ZIP filename including today's date,
+    delete the original JSON file, and remove older versions of the ZIP file."""
+
+    # Get today's date in the format YYYYMMDD
+    today_date = datetime.now().strftime("%Y%m%d")
+
+    # Include the date in the zip filename
+    zip_filename_with_date = f"{zip_filename}_{today_date}"
+
+    # Define the zip path
+    zip_path = json_path.parent / f"{zip_filename_with_date}.zip"  # Custom ZIP name with today's date
+
+    # Remove older zip files in the directory
+    for file in json_path.parent.glob(f"{zip_filename}*.zip"):
+        if file != zip_path:
+            file.unlink()  # Delete the older zip files
+
+    # Create the new zip file
     with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zipf:
         zipf.write(json_path, json_path.name)
 
@@ -31,6 +51,7 @@ def zip_json(json_path: Path, zip_filename: str):
     json_path.unlink()
 
     return zip_path
+
 
 
 def save_and_zip(data: ProgramGuide, subdirs: list[str], zip_filename: str):
