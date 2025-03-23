@@ -18,8 +18,13 @@ This project is designed to model and format TV EPG (Electronic Program Guide) d
 - `pydantic`: For data modeling.
 - `pytz`: For time zone handling.
 
+## Current Sources
+
+- New Zealand, SKY NZ GraphQL
+- Australia, xmltv.net
 
 ## LG ProCentric Server
+
 Preparing the data form importation is only the first step, you must host a Zip file on and accessable FTP server and has the file named correctly.
 
 ZIP Naming Convention = Procentric_EPG_{ISO Country Code ie NZL}_{Date YYYYMMDD}.zip
@@ -66,11 +71,4 @@ FTP Users prospective
     ]
 }
 ```
-
-
-### EPG ID Mapping for PCD or Other.
-[EPG ID Mapping](./data/raw_channels.csv)
-
-## Channel Icon Bundle
-
-Will build and bundle the NZ Channels icon bundle for importing into PCD.
+Good Luck.
