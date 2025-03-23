@@ -1,8 +1,36 @@
+import json
 import logging
+import os
 from models.epg_model import ProgramGuide
 from utils.file_handler import save_and_zip
 from epg_sources.xmltv_net.main import XMLTV
 from epg_sources.sky_nz.main import SkyNZ_EPG
+
+# Ensure the 'debug' directory exists
+debug_dir = './debug'
+if not os.path.exists(debug_dir):
+    os.makedirs(debug_dir)  # Create the directory if it doesn't exist
+
+###############################
+## For New Zealand
+###############################
+
+epg = SkyNZ_EPG(url="https://api.skyone.co.nz/exp/graph", zip_output_path="./output/EPG/NZ/Procentric_EPG_NZL.zip")
+logging.info(f"Fetching and parsing the XML data for New Zealand...")
+data = epg.fetch_data()
+
+# Check if the data is valid and write it to a file
+with open(os.path.join(debug_dir, "debug_skynz.json"), "w") as file:
+    # Convert 'data' to a JSON-formatted string and write it to the file
+    file.write(json.dumps(data, indent=4))  # Pretty print with an indent for readability
+
+if data:
+    program_guide = epg.parse_program_data(data)
+    if program_guide:
+        save_and_zip(program_guide, ["EPG", "NZL"], 'Procentric_EPG_NZL')
+    else:
+        logging.warning(f"No program guide data found for New Zealand.")
+
 
 
 ###############################
@@ -35,22 +63,8 @@ def XMLTVProcess(source: XMLTV, location_tags: list, file_prefix: str):
         logging.error(f"Error occurred while processing '{source.title}': {e}")
 
 # Process Australian cities
-for city in cities:
-    source = create_xmltv_source(city["city"], city["url"], city["title"])
-    XMLTVProcess(source, ["EPG", "AU", city["city"]], f"Procentric_EPG_{city['city'][:3].upper()}")
+# for city in cities:
+#     source = create_xmltv_source(city["city"], city["url"], city["title"])
+#     XMLTVProcess(source, ["EPG", "AU", city["city"]], f"Procentric_EPG_{city['city'][:3].upper()}")
 
 
-
-###############################
-## For New Zealand
-###############################
-
-epg = SkyNZ_EPG(url="https://api.skyone.co.nz/exp/graph", zip_output_path="./output/EPG/NZ/Procentric_EPG_NZL.zip")
-logging.info(f"Fetching and parsing the XML data for New Zealand...")
-data = epg.fetch_data()
-if data:
-    program_guide = epg.parse_program_data(data)
-    if program_guide:
-        save_and_zip(program_guide, ["EPG", "NZL"], 'Procentric_EPG_NZL')
-    else:
-        logging.warning(f"No program guide data found for New Zealand.")

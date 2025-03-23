@@ -1,7 +1,7 @@
 import re
 import requests
 from typing import List
-from datetime import datetime
+from datetime import datetime, timedelta
 import pytz
 from models.epg_model import ProgramGuide, Channel, Event, get_fetch_time
 
@@ -9,6 +9,10 @@ from models.epg_model import ProgramGuide, Channel, Event, get_fetch_time
 # Get current date in New Zealand time zone
 nz_timezone = pytz.timezone("Pacific/Auckland")
 nz_date = datetime.now(nz_timezone).strftime("%Y-%m-%d")
+
+# Generate a list of dates for today and the next two days
+nz_dates = [(datetime.now(nz_timezone) + timedelta(days=i)).strftime("%Y-%m-%d") for i in range(3)]
+
 
 
 class SkyNZ_EPG:
@@ -18,28 +22,106 @@ class SkyNZ_EPG:
 
     def fetch_data(self):
         """Fetch data from the GraphQL endpoint."""
+
         headers = {
             'Content-Type': 'application/json',
         }
-        
-        # Define the request body with the dynamic date
-        body = f"""
-        {{
-            "query": "query getChannelGroup($id: ID!, $date: LocalDate) {{ experience(appId: TV_GUIDE_WEB) {{ channelGroup(id: $id) {{ id title channels {{ ... on LinearChannel {{ id title number tileImage {{ uri __typename }} slotsForDay(date: $date) {{ slots {{ id startMs endMs live programme {{ ... on Episode {{ id title synopsis show {{ id title type __typename }} __typename }} ... on Movie {{ id title synopsis __typename }} ... on PayPerViewEventProgram {{ id title synopsis __typename }} }} __typename }} }} __typename }} }} __typename }} __typename }} }}",
-            "variables": {{
-                "id": "4b7LA20J4iHaThwky9iVqn",
-                "date": "{nz_date}"
-            }}
-        }}
-        """
-        
-        response = requests.post(self.url, headers=headers, data=body)
-        if response.status_code == 200:
-            print(response.json())
-            return response.json()
-        else:
-            print(f"Error: Failed to fetch data. Status code: {response.status_code}")
-            return None
+
+        merged_data = {
+            "data": {
+                "experience": {
+                    "channelGroup": {
+                        "channels": []
+                    }
+                }
+            }
+        }
+
+
+        for nz_date in nz_dates:
+            # Define the request body with the dynamic date
+            print(f"Fetching data for date: {nz_date}")
+
+            body = {
+                "query": """
+                    query getChannelGroup($id: ID!, $date: LocalDate) {
+                        experience(appId: TV_GUIDE_WEB) {
+                            channelGroup(id: $id) {
+                                id
+                                title
+                                channels {
+                                    ... on LinearChannel {
+                                        id
+                                        title
+                                        number
+                                        tileImage {
+                                            uri
+                                        }
+                                        slotsForDay(date: $date) {
+                                            slots {
+                                                id
+                                                startMs
+                                                endMs
+                                                ratingString
+                                                programme {
+                                                    ... on Episode {
+                                                        id
+                                                        title
+                                                        synopsis
+                                                        show {
+                                                            id
+                                                            title
+                                                            type
+                                                        }
+                                                    }
+                                                    ... on Movie {
+                                                        id
+                                                        title
+                                                        synopsis
+                                                    }
+                                                    ... on PayPerViewEventProgram {
+                                                        id
+                                                        title
+                                                        synopsis
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                """,
+                "variables": {
+                    "id": "4b7LA20J4iHaThwky9iVqn",
+                    "date": nz_date
+                }
+            }
+
+
+
+            response = requests.post(self.url, headers=headers, json=body)
+            if response.status_code == 200:
+                # Extract channel list safely
+                data = response.json()
+
+                channels = (
+                    data.get("data", {})
+                    .get("experience", {})
+                    .get("channelGroup", {})
+                    .get("channels", [])
+                )
+
+                # Merge channels by appending them to the merged_data
+                merged_data["data"]["experience"]["channelGroup"]["channels"].extend(channels)
+
+            else:
+                print(f"Error: Failed to fetch data. Status code: {response.status_code}")
+                return None
+
+        return merged_data
+
 
     def clean_string(self, input_string: str) -> str:
         """Removes unsupported characters and replaces them with a standard character."""
@@ -64,6 +146,7 @@ class SkyNZ_EPG:
     def parse_program_data(self, data):
         """Parse the response data from the GraphQL query and map it to the ProgramGuide model."""
         # Ensure we have the expected structure
+
         if 'data' not in data or 'experience' not in data['data'] or 'channelGroup' not in data['data']['experience']:
             print("Error: Unexpected data structure.")
             return None
@@ -100,17 +183,18 @@ class SkyNZ_EPG:
                     programme = slot.get('programme', {})
                     title = self.safe_find_text(programme, 'title', '')  # Safe retrieval
                     event_description = self.safe_find_text(programme, 'synopsis', '')  # Safe retrieval
-                    
-                # Map event data to the Event model
+                    rating = self.safe_find_text('ratingString', '')  # Safe retrieval
+
+                    # Map event data to the Event model
                     event_obj = Event(
                         eventID=slot['id'],
                         title=title,  # Default to empty string if title is missing
                         eventDescription=event_description,
-                        rating="",  # If ratings are available, map them here
+                        rating=rating, # If ratings are available, map them here
                         date=self.format_date(slot['startMs']),  # Ensure correct date format
                         startTime=self.format_start_time(slot['startMs']),  # Convert start time from ms
                         length=self.calculate_length(slot['startMs'], slot['endMs']),  # Duration in minutes
-                        genre= self.extract_genre(programme)  # If genre is available
+                        genre= ""
                     )
 
                     # Add the event to the channel's event list
@@ -118,10 +202,10 @@ class SkyNZ_EPG:
             else:
                 # Log a more detailed warning if 'slotsForDay' is not in the expected format
                 print(f"Warning: 'slotsForDay' is not a valid list or missing for channel: {channel['title']}")
-            
+
             # Add the channel to the ProgramGuide's channel list
             program_guide.channels.append(channel_obj)
-            
+
         program_guide.maxMinutes = self.get_max_minutes(program_guide.channels)
 
         return program_guide
@@ -150,10 +234,6 @@ class SkyNZ_EPG:
         duration = (end_ms - start_ms) / 60000  # Convert milliseconds to minutes
         return str(int(duration))
 
-    def extract_genre(self, programme) -> str:
-        """Extract the genre of the programme (if available)."""
-        # You may have to modify this depending on how the genre is represented in the programme data
-        return programme.get('genre', '')
 
     def format_date(self, timestamp_ms):
         """Convert a timestamp in milliseconds to a human-readable date format (YYYY-MM-DD)."""
