@@ -19,12 +19,12 @@ epg = SkyNZ_EPG(url="https://api.skyone.co.nz/exp/graph", zip_output_path="./out
 logging.info(f"Fetching and parsing the XML data for New Zealand...")
 data = epg.fetch_data()
 
-# Check if the data is valid and write it to a file
-with open(os.path.join(debug_dir, "debug_skynz.json"), "w") as file:
-    # Convert 'data' to a JSON-formatted string and write it to the file
-    file.write(json.dumps(data, indent=4))  # Pretty print with an indent for readability
-
 if data:
+    # Check if the data is valid and write it to a file
+    with open(os.path.join(debug_dir, "debug_skynz.json"), "w") as file:
+    # Convert 'data' to a JSON-formatted string and write it to the file
+        file.write(json.dumps(data, indent=4))  # Pretty print with an indent for readability
+
     program_guide = epg.parse_program_data(data)
     if program_guide:
         save_and_zip(program_guide, ["EPG", "NZL"], 'Procentric_EPG_NZL')
@@ -52,8 +52,10 @@ def XMLTVProcess(source: XMLTV, location_tags: list, file_prefix: str):
     try:
         logging.info(f"Fetching and parsing the XML data for '{source.title}'...")
         program_guide = source.get_program_guide()
+
         if program_guide:
-            logging.info(f"Successfully fetched and parsed the XML data for '{source.title}'.")
+            logging.info(f"Successfully fetched and parsed the XML data for '{source.title}'.") 
+
             save_and_zip(program_guide, location_tags, file_prefix)
             logging.info(f"Data for '{source.title}' has been saved and zipped successfully.")
         else:
@@ -63,8 +65,8 @@ def XMLTVProcess(source: XMLTV, location_tags: list, file_prefix: str):
         logging.error(f"Error occurred while processing '{source.title}': {e}")
 
 # Process Australian cities
-# for city in cities:
-#     source = create_xmltv_source(city["city"], city["url"], city["title"])
-#     XMLTVProcess(source, ["EPG", "AU", city["city"]], f"Procentric_EPG_{city['city'][:3].upper()}")
+for city in cities:
+    source = create_xmltv_source(city["city"], city["url"], city["title"])
+    XMLTVProcess(source, ["EPG", "AU", city["city"]], f"Procentric_EPG_{city['city'][:3].upper()}")
 
 
