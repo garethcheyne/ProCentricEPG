@@ -96,10 +96,6 @@ class SkyNZ_EPG:
                     title = self.safe_find_text(programme, 'title', '')  # Safe retrieval
                     event_description = self.safe_find_text(programme, 'synopsis', '')  # Safe retrieval
                     
-
-
-                    print(slot)
-
                 # Map event data to the Event model
                     event_obj = Event(
                         eventID=slot['id'],
