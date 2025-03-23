@@ -2,7 +2,14 @@ import re
 import requests
 from typing import List
 from datetime import datetime
+import pytz
 from models.epg_model import ProgramGuide, Channel, Event, get_fetch_time
+
+
+# Get current date in New Zealand time zone
+nz_timezone = pytz.timezone("Pacific/Auckland")
+nz_date = datetime.now(nz_timezone).strftime("%Y-%m-%d")
+
 
 class SkyNZ_EPG:
     def __init__(self, url: str, zip_output_path: str):
@@ -15,14 +22,15 @@ class SkyNZ_EPG:
             'Content-Type': 'application/json',
         }
         
-        body = """
-        {
-            "query": "query getChannelGroup($id: ID!, $date: LocalDate) { experience(appId: TV_GUIDE_WEB) { channelGroup(id: $id) { id title channels { ... on LinearChannel { id title number tileImage { uri __typename } slotsForDay(date: $date) { slots { id startMs endMs live programme { ... on Episode { id title synopsis show { id title type __typename } __typename } ... on Movie { id title synopsis __typename } ... on PayPerViewEventProgram { id title synopsis __typename } } __typename } } __typename } } __typename } __typename } }",
-            "variables": {
+        # Define the request body with the dynamic date
+        body = f"""
+        {{
+            "query": "query getChannelGroup($id: ID!, $date: LocalDate) {{ experience(appId: TV_GUIDE_WEB) {{ channelGroup(id: $id) {{ id title channels {{ ... on LinearChannel {{ id title number tileImage {{ uri __typename }} slotsForDay(date: $date) {{ slots {{ id startMs endMs live programme {{ ... on Episode {{ id title synopsis show {{ id title type __typename }} __typename }} ... on Movie {{ id title synopsis __typename }} ... on PayPerViewEventProgram {{ id title synopsis __typename }} }} __typename }} }} __typename }} }} __typename }} __typename }} }}",
+            "variables": {{
                 "id": "4b7LA20J4iHaThwky9iVqn",
-                "date": "2025-03-24"
-            }
-        }
+                "date": "{nz_date}"
+            }}
+        }}
         """
         
         response = requests.post(self.url, headers=headers, data=body)
