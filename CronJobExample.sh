@@ -56,6 +56,8 @@ fi
 # Navigate to script directory
 cd "$SCRIPT_DIR" || { log "Error: Failed to change directory to $SCRIPT_DIR"; exit 1; }
 
+
+
 # Run the Python script
 log "Running Python script..."
 if python3 ./main.py; then
