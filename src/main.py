@@ -41,11 +41,11 @@ def create_xmltv_source(city: str, url: str, title: str):
 
 # List of Australian cities to process
 cities = [
-    {"city": "Sydney", "url": "https://xmltv.net/xml_files/Sydney.xml", "title": "Pro:Centric JSON Program Guide Data AUS Sydney"},
-    {"city": "Brisbane", "url": "https://xmltv.net/xml_files/Brisbane.xml", "title": "Pro:Centric JSON Program Guide Data AUS Brisbane"},
-    {"city": "Adelaide", "url": "https://xmltv.net/xml_files/Adelaide.xml", "title": "Pro:Centric JSON Program Guide Data AUS Adelaide"},
-    {"city": "Goldcoast", "url": "https://xmltv.net/xml_files/Goldcoast.xml", "title": "Pro:Centric JSON Program Guide Data AUS Gold Coast"},
-    {"city": "Melbourne", "url": "https://xmltv.net/xml_files/Melbourne.xml", "title": "Pro:Centric JSON Program Guide Data AUS Melbourne"}
+    {"city": "SYD", "url": "https://xmltv.net/xml_files/Sydney.xml", "title": "Pro:Centric JSON Program Guide Data AUS Sydney"},
+    {"city": "BNE", "url": "https://xmltv.net/xml_files/Brisbane.xml", "title": "Pro:Centric JSON Program Guide Data AUS Brisbane"},
+    {"city": "ADL", "url": "https://xmltv.net/xml_files/Adelaide.xml", "title": "Pro:Centric JSON Program Guide Data AUS Adelaide"},
+    {"city": "OOL", "url": "https://xmltv.net/xml_files/Goldcoast.xml", "title": "Pro:Centric JSON Program Guide Data AUS Gold Coast"},
+    {"city": "MEL", "url": "https://xmltv.net/xml_files/Melbourne.xml", "title": "Pro:Centric JSON Program Guide Data AUS Melbourne"}
 ]
 
 def XMLTVProcess(source: XMLTV, location_tags: list, file_prefix: str):
