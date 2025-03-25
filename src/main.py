@@ -67,6 +67,6 @@ def XMLTVProcess(source: XMLTV, location_tags: list, file_prefix: str):
 # Process Australian cities
 for city in cities:
     source = create_xmltv_source(city["city"], city["url"], city["title"])
-    XMLTVProcess(source, ["EPG", "AUS", city["city"]], f"Procentric_EPG_{city['city'][:3].upper()}")
+    XMLTVProcess(source, ["EPG", "AUS", city["city"]], f"Procentric_EPG_{city['city']}")
 
 
