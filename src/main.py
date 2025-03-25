@@ -36,16 +36,16 @@ if data:
 ###############################
 ## For Australia
 ###############################
-def create_xmltv_source(city: str, url: str, title: str):
-    return XMLTV(url, title)
+def create_xmltv_source(city: str, url: str, title: str, timezone_offset: int) -> XMLTV:
+    return XMLTV(url, title, timezone_offset)
 
 # List of Australian cities to process
 cities = [
-    {"city": "SYD", "url": "https://xmltv.net/xml_files/Sydney.xml", "title": "Pro:Centric JSON Program Guide Data AUS Sydney"},
-    {"city": "BNE", "url": "https://xmltv.net/xml_files/Brisbane.xml", "title": "Pro:Centric JSON Program Guide Data AUS Brisbane"},
-    {"city": "ADL", "url": "https://xmltv.net/xml_files/Adelaide.xml", "title": "Pro:Centric JSON Program Guide Data AUS Adelaide"},
-    {"city": "OOL", "url": "https://xmltv.net/xml_files/Goldcoast.xml", "title": "Pro:Centric JSON Program Guide Data AUS Gold Coast"},
-    {"city": "MEL", "url": "https://xmltv.net/xml_files/Melbourne.xml", "title": "Pro:Centric JSON Program Guide Data AUS Melbourne"}
+    {"city": "SYD", "url": "https://xmltv.net/xml_files/Sydney.xml", "title": "Pro:Centric JSON Program Guide Data AUS Sydney", "timezone": 11},  # AEDT
+    {"city": "BNE", "url": "https://xmltv.net/xml_files/Brisbane.xml", "title": "Pro:Centric JSON Program Guide Data AUS Brisbane", "timezone": 10},  # AEST
+    {"city": "ADL", "url": "https://xmltv.net/xml_files/Adelaide.xml", "title": "Pro:Centric JSON Program Guide Data AUS Adelaide", "timezone": 10.5},  # ACDT
+    {"city": "OOL", "url": "https://xmltv.net/xml_files/Goldcoast.xml", "title": "Pro:Centric JSON Program Guide Data AUS Gold Coast", "timezone": 10},  # AEST
+    {"city": "MEL", "url": "https://xmltv.net/xml_files/Melbourne.xml", "title": "Pro:Centric JSON Program Guide Data AUS Melbourne", "timezone": 11}  # AEDT
 ]
 
 def XMLTVProcess(source: XMLTV, location_tags: list, file_prefix: str):
@@ -54,7 +54,7 @@ def XMLTVProcess(source: XMLTV, location_tags: list, file_prefix: str):
         program_guide = source.get_program_guide()
 
         if program_guide:
-            logging.info(f"Successfully fetched and parsed the XML data for '{source.title}'.") 
+            logging.info(f"Successfully fetched and parsed the XML data for '{source.title}'.")
 
             save_and_zip(program_guide, location_tags, file_prefix)
             logging.info(f"Data for '{source.title}' has been saved and zipped successfully.")
@@ -64,9 +64,13 @@ def XMLTVProcess(source: XMLTV, location_tags: list, file_prefix: str):
     except Exception as e:
         logging.error(f"Error occurred while processing '{source.title}': {e}")
 
+# Ensure logging is configured
+logging.basicConfig(level=logging.INFO)
+
 # Process Australian cities
 for city in cities:
-    source = create_xmltv_source(city["city"], city["url"], city["title"])
+    timezone_offset = city.get("timezone", 0)  # Default to 0 if not set
+    source = create_xmltv_source(city["city"], city["url"], city["title"], timezone_offset)
     XMLTVProcess(source, ["EPG", "AUS", city["city"]], f"Procentric_EPG_{city['city']}")
 
 

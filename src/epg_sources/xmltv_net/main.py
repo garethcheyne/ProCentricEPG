@@ -7,9 +7,10 @@ from datetime import datetime
 from models.epg_model import ProgramGuide, Channel, Event
 
 class XMLTV:
-    def __init__(self, url: str, title: str):
+    def __init__(self, url: str, title: str, timezone: int = 0):
         self.url = url
         self.title = title
+        self.timezone = timezone
 
     def get_fetch_time(self) -> str:
         """Returns the current timestamp in the required format with timezone offset."""
@@ -72,19 +73,25 @@ class XMLTV:
             # Extract program information
             for programme_elem in root.findall('programme'):
                 # Extract and format the date
-                start_time = programme_elem.get('start')  # Format: "YYYYMMDDHHMMSS Z"
-                date_str = start_time[:8]  # "YYYYMMDD"
-                formatted_date = datetime.strptime(date_str, "%Y%m%d").strftime("%Y.%m-%d")  # Format as "YYYY.MM-DD"
+                start = programme_elem.get('start')  # Format: "YYYYMMDDHHMMSS Z"
+
+                # Convert start time to local timezone
+                utc_time = datetime.strptime(start, "%Y%m%d%H%M%S %z")  # Parse with timezone
+                local_tz = pytz.FixedOffset(self.timezone * 60)  # Convert minutes offset to tzinfo
+                local_time = utc_time.astimezone(local_tz)  # Convert to local time
+
+                formatted_date = local_time.strftime("%Y-%m-%d")  # Extract date
+                start_time = local_time.strftime("%H%M")  # Extract time in HH:MM format
+
 
                 event = Event(
-                    eventID=self.generate_random_string(),  # Unique random eventID
+                    eventID=self.generate_random_string(),
                     title=self.safe_find_text(programme_elem, 'title'),
                     eventDescription=self.safe_find_text(programme_elem, 'desc'),
-                    rating=self.safe_find_rating_value(programme_elem),  # Extract the rating value
-                    date=programme_elem.get('start')[:10],  # Extract date (first 10 chars of start)
-                    startTime=formatted_date,
-                    length=str(int((datetime.strptime(programme_elem.get('stop'), "%Y%m%d%H%M%S %z") - 
-                                    datetime.strptime(programme_elem.get('start'), "%Y%m%d%H%M%S %z")).total_seconds() // 60)),
+                    rating=self.safe_find_rating_value(programme_elem),
+                    date=formatted_date,
+                    startTime=start_time,
+                    length=str(int((datetime.strptime(programme_elem.get('stop'), "%Y%m%d%H%M%S %z") - utc_time).total_seconds() // 60)),
                     genre=self.safe_find_text(programme_elem, 'category')
                 )
                 channel.events.append(event)

@@ -136,7 +136,7 @@ class SkyNZ_EPG:
         """Safely finds the value of a dictionary key or returns a default value if the key is missing, and cleans the text."""
         if isinstance(parent, dict):
             # Get the value from the dictionary, ensuring it's a string
-            value = str(parent.get(tag, default))
+            value = str(parent.get(tag, default))    
             # Clean the string before returning
             return self.clean_string(value)
 
@@ -183,7 +183,7 @@ class SkyNZ_EPG:
                     programme = slot.get('programme', {})
                     title = self.safe_find_text(programme, 'title', '')  # Safe retrieval
                     event_description = self.safe_find_text(programme, 'synopsis', '')  # Safe retrieval
-                    rating = self.safe_find_text('ratingString', '')  # Safe retrieval
+                    rating = self.safe_find_text(slot, 'ratingString', '')  # Safe retrieval
 
                     # Map event data to the Event model
                     event_obj = Event(
