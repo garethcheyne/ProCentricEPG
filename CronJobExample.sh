@@ -13,7 +13,7 @@ LOG_FILE="$REPO_DIR/epg_run.log"
 CRON_LOG="/var/log/cron_epg.log"
 
 # Discord Webhook URL
-WEBHOOK_URL="https://discordapp.com/api/webhooks/??"
+WEBHOOK_URL=""
 
 # Log function
 log() {
@@ -33,11 +33,15 @@ send_discord_notification "✅ EPG update started..."
 cd "$REPO_DIR" || { log "Error: Failed to change directory to $REPO_DIR"; exit 1; }
 
 # Pull latest updates from Git
-log "Pulling latest updates from Git..."
-if git pull origin main; then
+log "Forcibly pulling latest updates from Git..."
+git fetch origin main
+
+# Reset local changes and forcefully match the remote branch
+if git reset --hard origin/main; then
     log "Git repository updated successfully."
 else
-    log "Warning: Git pull failed. Continuing with the existing code."
+    log "Error: Git pull failed. Something went wrong while updating."
+    exit 1
 fi
 
 # Activate virtual environment
@@ -67,6 +71,15 @@ if [ ! -d "$OUTPUT_DIR" ]; then
     log "Error: Output directory $OUTPUT_DIR does not exist."
     send_discord_notification "❌ EPG update failed: Output directory missing!"
     exit 1
+fi
+
+# Remove existing contents inside EPG directory
+EPG_DIR="$DEST_DIR/EPG"
+if [ -d "$EPG_DIR" ]; then
+    log "Removing existing contents in $EPG_DIR..."
+    rm -rf "$EPG_DIR"/*
+else
+    log "EPG directory does not exist, skipping removal."
 fi
 
 # Copy files to the destination directory
