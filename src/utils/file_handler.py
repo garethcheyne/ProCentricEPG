@@ -7,61 +7,68 @@ from models.epg_model import ProgramGuide  # Import your model
 
 BASE_OUTPUT_DIR = Path("output")  # Base output directory
 
-def save_json(data: ProgramGuide, subdirs: list[str]):
+def save_json(data: ProgramGuide, subdirs: list[str]) -> Path:
     """Save the program guide data as 'Procentric_EPG.json' inside subdirectories."""
     
-    # Construct the full directory path
     output_path = BASE_OUTPUT_DIR.joinpath(*subdirs)
     output_path.mkdir(parents=True, exist_ok=True)  # Ensure directories exist
     
     json_path = output_path / "Procentric_EPG.json"  # Fixed filename
     
-    with json_path.open("w", encoding="utf-8") as f:
-        json.dump(data.dict(), f, indent=4)
-    
+    try:
+        with json_path.open("w", encoding="utf-8") as f:
+            json.dump(data.dict() if hasattr(data, 'dict') else data, f, indent=4)
+        print(f"JSON saved: {json_path}")
+    except Exception as e:
+        print(f"Error saving JSON: {e}")
+        return None
+
     return json_path
 
-import zipfile
-from pathlib import Path
-from datetime import datetime
 
-def zip_json(json_path: Path, zip_filename: str):
+def zip_json(json_path: Path, zip_filename: str) -> Path:
     """Zip the JSON file with a custom ZIP filename including today's date,
     delete the original JSON file, and remove older versions of the ZIP file."""
 
-    # Get today's date in the format YYYYMMDD
-    today_date = datetime.now().strftime("%Y%m%d")
+    today_date = datetime.datetime.now().strftime("%Y%m%d")  # Format: YYYYMMDD
+    zip_filename_with_date = f"{zip_filename}_{today_date}.zip"
+    zip_path = json_path.parent / zip_filename_with_date  # Custom ZIP name with today's date
 
-    # Include the date in the zip filename
-    zip_filename_with_date = f"{zip_filename}_{today_date}"
-
-    # Define the zip path
-    zip_path = json_path.parent / f"{zip_filename_with_date}.zip"  # Custom ZIP name with today's date
-
-    # Remove older zip files in the directory
-    for file in json_path.parent.glob(f"{zip_filename}*.zip"):
+    # Remove older ZIP files in the directory (excluding today's ZIP)
+    for file in json_path.parent.glob(f"{zip_filename}_*.zip"):
         if file != zip_path:
-            file.unlink()  # Delete the older zip files
+            try:
+                file.unlink()
+                print(f"Deleted old ZIP: {file}")
+            except Exception as e:
+                print(f"Error deleting old ZIP {file}: {e}")
 
-    # Create the new zip file
-    with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zipf:
-        zipf.write(json_path, json_path.name)
+    # Create new ZIP
+    try:
+        with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zipf:
+            zipf.write(json_path, json_path.name)
+        print(f"ZIP created: {zip_path}")
+    except Exception as e:
+        print(f"Error creating ZIP: {e}")
+        return None
 
     # Delete the JSON file after zipping
-    json_path.unlink()
+    try:
+        json_path.unlink()
+        print(f"Deleted JSON file: {json_path}")
+    except Exception as e:
+        print(f"Error deleting JSON file: {e}")
 
     return zip_path
 
 
-
-def save_and_zip(data: ProgramGuide, subdirs: list[str], zip_filename: str):
+def save_and_zip(data: ProgramGuide, subdirs: list[str], zip_filename: str) -> Path:
     """Save JSON as 'Procentric_EPG.json' and create a ZIP file with a custom name, then delete the JSON file."""
-    json_path = save_json(data, subdirs)
-    zip_path = zip_json(json_path, zip_filename)
     
-    print(f"JSON saved: {json_path}")
-    print(f"ZIP created: {zip_path}")
-    print(f"JSON file deleted: {json_path}")
+    json_path = save_json(data, subdirs)
+    if not json_path:
+        print("Failed to save JSON. Skipping ZIP creation.")
+        return None
 
+    zip_path = zip_json(json_path, zip_filename)
     return zip_path
-
