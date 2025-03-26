@@ -69,7 +69,7 @@ logging.basicConfig(level=logging.INFO)
 
 # Process Australian cities
 for city in cities:
-    timezone_offset = city.get("timezone", 0)  # Default to 0 if not set
+    timezone_offset = 0 # city.get("timezone", 0)  # Default to 0 if not set
     source = create_xmltv_source(city["city"], city["url"], city["title"], timezone_offset)
     XMLTVProcess(source, ["EPG", "AUS", city["city"]], f"Procentric_EPG_{city['city']}")
 
