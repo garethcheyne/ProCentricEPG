@@ -73,29 +73,30 @@ class XMLTV:
             # Extract program information
             for programme_elem in root.findall('programme'):
                 # Extract and format the date
-                start = programme_elem.get('start')  # Format: "YYYYMMDDHHMMSS Z"
+                if programme_elem.attrib['channel'] == channel_elem.get('id'):
 
-                # Convert start time to local timezone
-                utc_time = datetime.strptime(start, "%Y%m%d%H%M%S %z")  # Parse with timezone
-                local_tz = pytz.FixedOffset(self.timezone * 60)  # Convert minutes offset to tzinfo
-                local_time = utc_time.astimezone(local_tz)  # Convert to local time
+                    start = programme_elem.get('start')  # Format: "YYYYMMDDHHMMSS Z"
 
-                formatted_date = local_time.strftime("%Y-%m-%d")  # Extract date
-                start_time = local_time.strftime("%H%M")  # Extract time in HH:MM format
+                    # Convert start time to local timezone
+                    utc_time = datetime.strptime(start, "%Y%m%d%H%M%S %z")  # Parse with timezone
+                    local_tz = pytz.FixedOffset(self.timezone * 60)  # Convert minutes offset to tzinfo
+                    local_time = utc_time.astimezone(local_tz)  # Convert to local time
+
+                    formatted_date = local_time.strftime("%Y-%m-%d")  # Extract date
+                    start_time = local_time.strftime("%H%M")  # Extract time in HH:MM format
 
 
-                event = Event(
-                    eventID=self.generate_random_string(),
-                    title=self.safe_find_text(programme_elem, 'title'),
-                    eventDescription=self.safe_find_text(programme_elem, 'desc'),
-                    rating=self.safe_find_rating_value(programme_elem),
-                    date=formatted_date,
-                    startTime=start_time,
-                    length=str(int((datetime.strptime(programme_elem.get('stop'), "%Y%m%d%H%M%S %z") - utc_time).total_seconds() // 60)),
-                    genre=self.safe_find_text(programme_elem, 'category')
-                )
-                channel.events.append(event)
-
+                    event = Event(
+                        eventID=self.generate_random_string(),
+                        title=self.safe_find_text(programme_elem, 'title'),
+                        eventDescription=self.safe_find_text(programme_elem, 'desc'),
+                        rating=self.safe_find_rating_value(programme_elem),
+                        date=formatted_date,
+                        startTime=start_time,
+                        length=str(int((datetime.strptime(programme_elem.get('stop'), "%Y%m%d%H%M%S %z") - utc_time).total_seconds() // 60)),
+                        genre=self.safe_find_text(programme_elem, 'category')
+                    )
+                    channel.events.append(event)
             channels.append(channel)
 
         # Now calculate the maxMinutes by passing the ProgramGuide object
