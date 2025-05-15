@@ -33,6 +33,7 @@ send_discord_notification "✅ EPG update started..."
 cd "$REPO_DIR" || { log "Error: Failed to change directory to $REPO_DIR"; exit 1; }
 
 # Pull latest updates from Git
+log "--------------------------------------------"
 log "Forcibly pulling latest updates from Git..."
 git fetch origin main
 
@@ -57,29 +58,44 @@ fi
 cd "$SCRIPT_DIR" || { log "Error: Failed to change directory to $SCRIPT_DIR"; exit 1; }
 
 
+# Remove existing contents inside EPG directory
+log "--------------------------------------------"
+log "Removing existing contents in $OUTPUT_DIR..."
+if [ -d "$OUTPUT_DIR" ]; then
+    rm -rf "$OUTPUT_DIR"/*
+else
+    log "Output directory does not exist, skipping removal."
+fi
 
 # Run the Python script
+log "--------------------------------------------"
 log "Running Python script..."
 if python3 ./main.py; then
     log "Python script executed successfully."
 else
     log "Python script execution failed."
-    send_discord_notification "❌ EPG update failed during script execution!"
+    send_discord_notification "❌ EPG update failed dduring script execution!"
     exit 1
 fi
 
 # Ensure the output directory exists
+log "--------------------------------------------"
+log "Checking if output directory $OUTPUT_DIR exists..."
 if [ ! -d "$OUTPUT_DIR" ]; then
     log "Error: Output directory $OUTPUT_DIR does not exist."
     send_discord_notification "❌ EPG update failed: Output directory missing!"
     exit 1
 fi
 
+
+
 # Remove existing contents inside EPG directory
-EPG_DIR="$DEST_DIR/EPG"
-if [ -d "$EPG_DIR" ]; then
-    log "Removing existing contents in $EPG_DIR..."
-    rm -rf "$EPG_DIR"/*
+log "--------------------------------------------"
+log "Removing existing contents in $DEST_DIR..."
+
+if [ -d "$DEST_DIR" ]; then
+    log "Removing existing contents in $DEST_DIR..."
+    rm -rfdv "$DEST_DIR"/*
 else
     log "EPG directory does not exist, skipping removal."
 fi
